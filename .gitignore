@@ -12,3 +12,7 @@ __pycache__/
 
 # Ignore model checkpoints (optional)
 checkpoints/
+
+# Ignore all frames from video folders
+data/sperm_video_01/frames/
+data/sperm_video_02/frames/
