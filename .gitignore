@@ -1,0 +1,14 @@
+# Ignore virtual environments
+.venv/
+venv/
+env/
+
+# Ignore Python cache
+__pycache__/
+*.pyc
+
+# Ignore IDE settings
+.idea/
+
+# Ignore model checkpoints (optional)
+checkpoints/
