@@ -14,8 +14,7 @@ __pycache__/
 checkpoints/
 
 # Data (videos, annotations, images)
-data/**/frames/
-data/**/annotations.json
+data/
 
 # Logs and temporary
 *.log
