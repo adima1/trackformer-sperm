@@ -1,18 +1,22 @@
-# Ignore virtual environments
+# Python environments
 .venv/
 venv/
 env/
 
-# Ignore Python cache
+# Python cache
 __pycache__/
-*.pyc
+*.py[cod]
 
-# Ignore IDE settings
+# IDE files
 .idea/
 
-# Ignore model checkpoints (optional)
+# Checkpoints (trained models)
 checkpoints/
 
-# Ignore all frames from video folders
-data/sperm_video_01/frames/
-data/sperm_video_02/frames/
+# Data (videos, annotations, images)
+data/**/frames/
+data/**/annotations.json
+
+# Logs and temporary
+*.log
+*.tmp
