@@ -1,0 +1,7 @@
+path: C:/tracformer_modle/trackformer-sperm/progect_yolov8/dataset
+
+train: images/train
+val: images/val
+
+nc: 1
+names: ['sperm']
