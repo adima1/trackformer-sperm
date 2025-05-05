@@ -14,7 +14,7 @@ class HungarianMatcher(nn.Module):
     def forward(self, outputs, targets):
         bs, num_queries = outputs['pred_logits'].shape[:2]
 
-        out_prob = outputs['pred_logits'].softmax(-1)  # [B, Q, num_classes]
+        out_prob = outputs['pred_logits'].softmax(-1)  # [B, Q, num_classes+1]
         out_bbox = outputs['pred_boxes']              # [B, Q, 4]
 
         indices = []
@@ -22,6 +22,10 @@ class HungarianMatcher(nn.Module):
         for b in range(bs):
             tgt_ids = targets[b]['labels']
             tgt_bbox = targets[b]['boxes']
+
+            # עלול לקרוס אם tgt_ids מכיל ערך מחוץ לטווח
+            if torch.any(tgt_ids >= out_prob.shape[-1]):
+                raise ValueError(f"Target label index out of range: got {tgt_ids.tolist()} but pred_logits shape is {out_prob[b].shape}")
 
             cost_class = -out_prob[b][:, tgt_ids]  # [Q, num_targets]
             cost_bbox = torch.cdist(out_bbox[b], tgt_bbox, p=1)
@@ -41,18 +45,26 @@ class SetCriterion(nn.Module):
         self.matcher = matcher
         self.eos_coef = eos_coef
 
-        empty_weight = torch.ones(num_classes + 1)
-        empty_weight[-1] = eos_coef
+        empty_weight = torch.ones(num_classes)
+        empty_weight[-1] = eos_coef  # פחות חשיבות ל-no-object
         self.register_buffer('empty_weight', empty_weight)
 
     def loss_labels(self, outputs, targets, indices):
-        src_logits = outputs['pred_logits']
+        src_logits = outputs['pred_logits']  # [B, Q, num_classes+1]
         idx = self._get_src_permutation_idx(indices)
+
+        # תוויות של ה-target (המסומנים)
         target_classes_o = torch.cat([t['labels'][J] for t, (_, J) in zip(targets, indices)])
-        target_classes = torch.full(src_logits.shape[:2], self.num_classes,
+
+        # ברירת מחדל: כל query = no-object
+        target_classes = torch.full(src_logits.shape[:2], self.num_classes - 1,
                                     dtype=torch.int64, device=src_logits.device)
+
         target_classes[idx] = target_classes_o
-        return F.cross_entropy(src_logits.transpose(1, 2), target_classes, weight=self.empty_weight)
+
+        return F.cross_entropy(
+            src_logits.transpose(1, 2), target_classes, weight=self.empty_weight
+        )
 
     def loss_boxes(self, outputs, targets, indices):
         idx = self._get_src_permutation_idx(indices)

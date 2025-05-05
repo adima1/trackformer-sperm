@@ -4,9 +4,9 @@ import json
 import numpy as np
 
 # נתיבים
-images_folder = r"C:\tracformer_modle\image_of_sperm\image_before_tagging"
-output_folder = r"C:\tracformer_modle\image_of_sperm\Images_whit_B_BOX"
-output_json_path = r"C:\tracformer_modle\image_of_sperm\annotations_simple.json"
+images_folder = r"C:\tracformer_modle\40_image_of_sperm\40_image_befor_tag"
+output_folder = r"C:\tracformer_modle\40_image_of_sperm\Images_whit_B_BOX"
+output_json_path = r"C:\tracformer_modle\40_image_of_sperm\annotations_simple.json"
 
 os.makedirs(output_folder, exist_ok=True)
 

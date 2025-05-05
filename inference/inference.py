@@ -1,64 +1,54 @@
-import torch
-import cv2
 import os
-import numpy as np
+import torch
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 from torchvision import transforms
 from PIL import Image
 from models.trackformer_model import TrackFormerModel
 
-# הגדרות
-IMAGE_PATH = r"C:\Users\User\Desktop\new_project\1000_images\Image\frame_0000.png"
-MODEL_WEIGHTS = r"C:\Users\User\PycharmProjects\trackformer-sperm\checkpoints\trackformer_epoch5.pth"
+# ======= הגדרות =======
+CHECKPOINT_PATH = r"C:\tracformer_modle\trackformer-sperm\checkpoints_all\trackformer_epoch5.pth"
+IMAGE_PATH = r"C:\tracformer_modle\all_image_of_sperm\image_before_tagging\frame_0126.png"
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# טענת המודל
-model = TrackFormerModel()
+# ======= טען מודל =======
+model = TrackFormerModel(num_classes=2, hidden_dim=256, num_queries=100)
+model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=DEVICE))
 model.to(DEVICE)
 model.eval()
-if MODEL_WEIGHTS:
-    model.load_state_dict(torch.load(MODEL_WEIGHTS))
 
-# טרנספורם
-transform = transforms.Compose([
-    transforms.ToTensor(),
-])
+# ======= פונקציה להצגה =======
+def visualize_single_image(image_path):
+    transform = transforms.Compose([transforms.ToTensor()])
+    image = Image.open(image_path).convert("RGB")
+    img_tensor = transform(image).unsqueeze(0).to(DEVICE)
 
-# טעינת תמונה
-image_pil = Image.open(IMAGE_PATH).convert("RGB")
-image_tensor = transform(image_pil).unsqueeze(0).to(DEVICE)  # [1, 3, H, W]
+    with torch.no_grad():
+        outputs = model(img_tensor)
 
-# הרצת המודל
-with torch.no_grad():
-    outputs = model(image_tensor)
+    pred_logits = outputs['pred_logits'][0]  # [num_queries, num_classes]
+    pred_boxes = outputs['pred_boxes'][0]    # [num_queries, 4]
+    scores = pred_logits.softmax(-1)[..., :-1].max(-1).values  # confidence ללא no-object
 
-# חילוץ תחזיות
-pred_logits = outputs['pred_logits'][0]     # [num_queries, num_classes+1]
-pred_boxes = outputs['pred_boxes'][0]       # [num_queries, 4] - normalized
+    keep = scores > 0.5
+    boxes = pred_boxes[keep].cpu()
+    scores = scores[keep].cpu()
 
-# ניקוי תחזיות: ניקח רק אלו שהמודל בטוח בהן (score גבוה)
-scores = pred_logits.softmax(-1)[..., :-1].max(-1).values  # confidence
-keep = scores > 0.7
-boxes = pred_boxes[keep].cpu().numpy()
-scores = scores[keep].cpu().numpy()
+    # === תצוגה ===
+    fig, ax = plt.subplots(1)
+    ax.imshow(image)
 
-# המרת תיבות מ-normalized ל-absolute
-h, w = image_pil.size[1], image_pil.size[0]
-boxes_abs = []
-for box in boxes:
-    cx, cy, bw, bh = box
-    x1 = int((cx - bw/2) * w)
-    y1 = int((cy - bh/2) * h)
-    x2 = int((cx + bw/2) * w)
-    y2 = int((cy + bh/2) * h)
-    boxes_abs.append((x1, y1, x2, y2))
+    for box, score in zip(boxes, scores):
+        x, y, w, h = box
+        rect = patches.Rectangle((x * image.width, y * image.height),
+                                 w * image.width, h * image.height,
+                                 linewidth=2, edgecolor='red', facecolor='none')
+        ax.add_patch(rect)
+        ax.text(x * image.width, y * image.height, f"{score:.2f}", color='red', fontsize=10)
 
-# ציור על התמונה
-image_np = np.array(image_pil)
-for (x1, y1, x2, y2), score in zip(boxes_abs, scores):
-    cv2.rectangle(image_np, (x1, y1), (x2, y2), (0, 255, 0), 2)
-    cv2.putText(image_np, f"{score:.2f}", (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 1)
+    ax.set_title(f"Predictions for {os.path.basename(image_path)}")
+    ax.axis("off")
+    plt.show()
 
-# הצגה
-cv2.imshow("Prediction", image_np)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+# ======= הרצה =======
+visualize_single_image(IMAGE_PATH)

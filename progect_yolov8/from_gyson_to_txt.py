@@ -2,8 +2,8 @@ import json
 import os
 
 # ⚙️ הגדרות - עדכן לפי הצורך:
-json_path = r"C:\tracformer_modle\all_image_of_sperm\annotations_simple.json"  # נתיב לקובץ הגיוון שלך (JSON)
-labels_dir =r"C:\tracformer_modle\all_image_of_sperm\txt" # תיקייה לשמור בה את קבצי התיוג
+json_path = r"C:\imgae_of_yolov8\trajectories.json"  # נתיב לקובץ הגיוון שלך (JSON)
+labels_dir =r"C:\imgae_of_yolov8\50_images_for_2_model" # תיקייה לשמור בה את קבצי התיוג
 image_width = 256  # רוחב התמונה בפיקסלים
 image_height = 256  # גובה התמונה בפיקסלים
 
